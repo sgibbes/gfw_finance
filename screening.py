@@ -15,11 +15,11 @@ buffer_dist = 10
 
 buffer = str(buffer_dist) + " Kilometers"
 
-data_points_buff = os.path.join(os.path.dirname(points),os.path.basename(points).split(".")[0]+"_buffCopy.shp")
+data_points_buff = os.path.join(os.path.dirname(points),os.path.basename(points).split(".")[0]+"_buff.shp")
 
 aoi_proj = os.path.join(os.path.dirname(points),os.path.basename(aoi).split(".")[0]+"_proj.shp")
 
-out_table = os.path.join(r'C:\Users\samantha.gibbes\Documents\gis\gfw_finance\New File Geodatabase.gdb',os.path.basename(aoi).split(".")[0]+"_results")
+out_table = os.path.join(r'C:\Users\samantha.gibbes\Documents\gis\gfw_finance\NewFileGeodatabase.gdb',os.path.basename(aoi).split(".")[0]+"_results")
 
 basename = os.path.basename(aoi).split(".")[0]
 bad = [" ","-",'/', ':', '*', '?', '"', '<', '>', '|']
@@ -27,9 +27,9 @@ for char in bad:
     basename = basename.replace(char,"_")
 intersected = os.path.join(os.path.dirname(points),basename+"_intersect.shp")
 
-globcover = r'C:\Users\samantha.gibbes\Documents\gis\gfw_finance\New File Geodatabase.gdb\global_cover'
+globcover = r'C:\Users\samantha.gibbes\Documents\gis\gfw_finance\NewFileGeodatabase.gdb\global_cover'
 hansenareamosaic = r'C:\Users\samantha.gibbes\Documents\gis\mosaics.gdb\hansen_area_worldeckert'
-geodatabase = r'C:\Users\samantha.gibbes\Documents\gis\gfw_finance\New File Geodatabase.gdb'
+geodatabase = r'C:\Users\samantha.gibbes\Documents\gis\gfw_finance\NewFileGeodatabase.gdb'
 
 def buffer_points(points):
     print "buffering data points by " + buffer
@@ -75,7 +75,7 @@ def zonal_stats(fc_geo,z_stats_tbl,fc_name):
     exp = fc_name.split("_")[1]
     arcpy.CalculateField_management(z_stats_tbl, "ID", "'" + exp + "'", "PYTHON_9.3")
 
-    arcpy.env.workspace = r'C:\Users\samantha.gibbes\Documents\gis\gfw_finance\New File Geodatabase.gdb'
+    arcpy.env.workspace = geodatabase
     table_list = arcpy.ListTables("glob_cover_ID_*")
     final_merge_table = os.path.join(geodatabase,'glob_cover_final')
     arcpy.Merge_management(table_list,final_merge_table)
@@ -87,26 +87,9 @@ def raster_calculation():
             feature_count += 1
             fc_geo = row[0]
             fc_name = str(row[1])
-            z_stats_tbl = os.path.join(r'C:\Users\samantha.gibbes\Documents\gis\gfw_finance\New File Geodatabase.gdb',"glob_cover_"+fc_name)
+            z_stats_tbl = os.path.join(geodatabase,"glob_cover_"+fc_name)
             zonal_stats(fc_geo,z_stats_tbl,fc_name)
     del cursor
 
 #-----------------------------------
-
-import arcpy
-
-try:
-    # Local variables...
-    tableList = ["C:\Users\samantha.gibbes\Documents\gis\gfw_finance\New File Geodatabase.gdb\data_points",\
-                 "C:\Users\samantha.gibbes\Documents\gis\gfw_finance\New File Geodatabase.gdb\glob_cover_final"]
-
-    fieldList = [["New File Geodatabase.gdb\data_points.OBJECTID", 'ObjectID'],["vtest.COUNTIES.NAME", 'Name']\
-                 ["vtest.CODEMOG.Males", 'Males'],["vtest.CODEMOG.Females", 'Females']]
-    whereClause = "vtest.COUNTIES.FIPS = vtest.CODEMOG.Fips" +\
-                  "and vtest.COUNTIES.STATE_NAME = 'California'"
-    keyField = "vtest.COUNTIES.OBJECTID"
-    lyrName = "CountyCombined"
-    # Make Query Table...
-    arcpy.MakeQueryTable_management(tableList, lyrName,"USE_KEY_FIELDS", keyField, fieldList, whereClause)
-
-    # Pri
+raster_calculation()
