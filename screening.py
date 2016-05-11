@@ -6,19 +6,19 @@ arcpy.env.overwriteOutput = "True"
 arcpy.CheckOutExtension("Spatial")
 
 
-points = r'C:\Users\samantha.gibbes\Documents\gis\gfw_finance\data_points_proj.shp'
+points = r'D:\Users\sgibbes\gfw_finance\data_points_proj_buff_1784m.shp'
 
 # aoi = r'C:\Users\samantha.gibbes\Documents\gis\admin_boundaries\wdpa_protected_areas\wdpa_protected_areas.shp'
 # aoi = r'C:\Users\samantha.gibbes\Documents\gis\admin_boundaries\ifl_2013\ifl_2013.shp'
 
-buffer_dist = 1784
 
-buffer = str(buffer_dist) + " meters"
+
+
 
 #data_points_buff = os.path.join(os.path.dirname(points),os.path.basename(points).split(".")[0]+"_buff.shp")
-data_points_buff=r'C:\Users\samantha.gibbes\Documents\gis\gfw_finance\datasets\data_points_proj_buff_1784m.shp'
 
-maindir = r'C:\Users\samantha.gibbes\Documents\gis\gfw_finance'
+
+
 # out_table = os.path.join(r'C:\Users\samantha.gibbes\Documents\gis\gfw_finance\New File Geodatabase2.gdb',os.path.basename(aoi).split(".")[0]+"_results")
 
 #
@@ -28,9 +28,6 @@ maindir = r'C:\Users\samantha.gibbes\Documents\gis\gfw_finance'
 
 
 globcover = r'C:\Users\samantha.gibbes\Documents\gis\gfw_finance\NewFileGeodatabase.gdb\global_cover'
-hansenareamosaic = r'C:\Users\samantha.gibbes\Documents\gis\mosaics.gdb\hansen_area_worldeckert'
-geodatabase = r'C:\Users\samantha.gibbes\Documents\gis\gfw_finance\New File Geodatabase2.gdb'
-error_text_file = os.path.join(maindir,'errors.txt')
 def buffer_points(points):
     print "buffering data points by " + buffer
     arcpy.Buffer_analysis(points,data_points_buff, buffer, "FULL", "ROUND", "NONE", "", "PLANAR")
@@ -72,18 +69,12 @@ def ifl_calculation():
     summarize_results(intersected,["ObjID"],"ifl")
 
 def zonal_stats(fc_geo,zone_raster,z_stats_tbl,fc_name,raster_name):
-
     try:
-        extraction = ExtractByMask(zone_raster,fc_geo)
+        extraction = ExtractByMask(zone_raster,fc_geo)*tcd
         arcpy.gp.ZonalStatisticsAsTable_sa(extraction, "VALUE", hansenareamosaic, z_stats_tbl, "DATA", "SUM")
         arcpy.AddField_management(z_stats_tbl, "ID", "SHORT")
         exp = fc_name.split("_")[1]
         arcpy.CalculateField_management(z_stats_tbl, "ID", "'" + exp + "'", "PYTHON_9.3")
-
-        arcpy.env.workspace = geodatabase
-        table_list = arcpy.ListTables(raster_name + "_ID_*")
-        final_merge_table = os.path.join(geodatabase,raster_name + '_final')
-        arcpy.Merge_management(table_list,final_merge_table)
     except IOError as e:
         arcpy.AddMessage(  "     failed")
         error_text = "I/O error({0}): {1}".format(e.errno, e.strerror)
@@ -107,28 +98,53 @@ def zonal_stats(fc_geo,zone_raster,z_stats_tbl,fc_name,raster_name):
         errortext.close()
         pass
 
-analysis = [r'C:\Users\samantha.gibbes\Documents\gis\gfw_finance\datasets\world_eckert.gdb\idn_primary_forest',"primary_forest"]
-def raster_calculation(analysis):
-    dataset = analysis[0]
-    raster_name = analysis[1]
-    with arcpy.da.SearchCursor(data_points_buff, ("Shape@", "point_id")) as cursor:
+def raster_calculation(data_points_buff,raster,analysis_name,outdir):
+    with arcpy.da.SearchCursor(data_points_buff, ("Shape@", "ObjID")) as cursor:
         feature_count = 0
         for row in cursor:
             feature_count += 1
             fc_geo = row[0]
-            fc_name = str(row[1])
-            z_stats_tbl = os.path.join(geodatabase,raster_name+"_"+fc_name)
-            zonal_stats(fc_geo,dataset,z_stats_tbl,fc_name,raster_name)
+            fc_name = "id_"+str(int(row[1]))
+            print "zonal stats " + fc_name
+            if fc_name == "id_41":
+                pass
+            else:
+                z_stats_tbl = os.path.join(outdir,analysis_name+"_"+fc_name)
+                if arcpy.Exists(z_stats_tbl):
+                    print "already exists"
+                else:
+                    print "running"
+                    zonal_stats(fc_geo,raster,z_stats_tbl,fc_name,analysis_name)
     del cursor
 
 def merge_tables(analysis_name):
-    arcpy.env.workspace = geodatabase
-    table_list = arcpy.ListTables("*_ID_*")
-    final_merge_table = os.path.join(geodatabase,analysis_name)
+    arcpy.env.workspace = outdir
+    table_list = arcpy.ListTables(analysis_name+"*_ID_*")
+    print table_list
+    final_merge_table = os.path.join(outdir,analysis_name+"_final_" + str(buffer_dist))
     arcpy.Merge_management(table_list,final_merge_table)
 #-----------------------------------
-# raster_calculation(analysis)
 
-aoi_proj = project_aoi(r'C:\Users\samantha.gibbes\Documents\gis\admin_boundaries\bra_land_rights\bra_land_rights.shp')
-intersected = intersect_points(aoi_proj)
-calculate_area(intersected)
+
+hansenareamosaic = r'D:\Users\sgibbes\gfw_finance\lossdata_worldeckert.gdb\hansen_area_world_eckert'
+raster = r'D:\Users\sgibbes\gfw_finance\lossdata_worldeckert.gdb\lossdata_worldeckert'
+tcd = r'D:\Users\sgibbes\gfw_finance\lossdata_worldeckert.gdb\tcd_worldeckert'
+
+#-----------------------------------
+analysis_name = "loss_in_biohs"
+
+buffer_dist = 1784
+buffer = str(buffer_dist) + " meters"
+outdir = r'D:\Users\sgibbes\gfw_finance\buff1784\lossinbiohs_1784_tcd30.gdb'
+maindir = os.path.dirname(outdir)
+print maindir
+error_text_file = os.path.join(maindir,'errors.txt')
+data_points_buff=r'D:\Users\sgibbes\gfw_finance\buff1784\hotspots_2011_polygons_proj_intersect_1784.shp'
+#-----------------------------------
+# aoi_proj = project_aoi(r'D:\Users\sgibbes\gfw_finance\data_points_proj_buff_1784m.shp')
+# intersected = intersect_points(aoi_proj)
+# calculate_area(intersected)
+
+
+raster_calculation(data_points_buff,raster,analysis_name,outdir)
+merge_tables(analysis_name)
