@@ -1,0 +1,9 @@
+Projection    ECKERTVI
+Datum         WGS84
+Spheroid      WGS84
+Units         METERS
+Zunits        NO
+Xshift        0.0
+Yshift        0.0
+Parameters    
+   0  0  0.0 /* Longitude of projection center

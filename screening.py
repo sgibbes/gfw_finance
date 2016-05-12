@@ -127,7 +127,7 @@ def merge_tables(analysis_name):
 
 
 hansenareamosaic = r'D:\Users\sgibbes\gfw_finance\lossdata_worldeckert.gdb\hansen_area_world_eckert'
-raster = r'D:\Users\sgibbes\gfw_finance\lossdata_worldeckert.gdb\lossdata_worldeckert'
+raster = r'D:\Users\sgibbes\gfw_finance\lossdata_worldeckert.gdb\carbon'
 tcd = r'D:\Users\sgibbes\gfw_finance\lossdata_worldeckert.gdb\tcd_worldeckert'
 
 #-----------------------------------
